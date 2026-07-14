@@ -1,0 +1,25 @@
+name: XCloudPhone Auto Renew
+
+on:
+  schedule:
+    - cron: '0 * * * *' # Chạy mỗi tiếng một lần
+  workflow_dispatch: # Cho phép chạy thủ công
+
+jobs:
+  renew:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write # Cấp quyền push file status.json
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Run XCloud Renew Script
+        env:
+          XCLOUD_TOKENS: ${{ secrets.XCLOUD_TOKENS }}
+        run: node xcloud_renew_script.js
