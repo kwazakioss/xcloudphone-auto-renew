@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XCloudPhone Manager</title>
+    <style>
+        :root {
+            --primary-color: #2563eb;
+            --bg-color: #f8fafc;
+            --card-bg: #ffffff;
+            --text-color: #1e293b;
+            --border-color: #e2e8f0;
+        }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            margin: 0;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        h1 {
+            font-size: 1.5rem;
+            margin-bottom: 20px;
+            color: var(--primary-color);
+        }
+        .container {
+            width: 100%;
+            max-width: 600px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgb(0 0 0 / 0.1);
+            overflow: hidden;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+        }
+        th, td {
+            padding: 12px 15px;
+            text-align: left;
+            border-bottom: 1px solid var(--border-color);
+        }
+        th {
+            background-color: #f1f5f9;
+            font-weight: 600;
+            font-size: 0.9rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+        }
+        tr:last-child td {
+            border-bottom: none;
+        }
+        .status-badge {
+            display: inline-block;
+            padding: 2px 8px;
+            border-radius: 9999px;
+            font-size: 0.75rem;
+            font-weight: 500;
+        }
+        .status-success { background-color: #dcfce7; color: #166534; }
+        .status-warning { background-color: #fef9c3; color: #854d0e; }
+        .status-error { background-color: #fee2e2; color: #991b1b; }
+        .loading {
+            padding: 20px;
+            text-align: center;
+            color: #64748b;
+        }
+        .update-time {
+            margin-top: 15px;
+            font-size: 0.8rem;
+            color: #64748b;
+        }
+    </style>
+</head>
+<body>
+    <h1>XCloudPhone Status</h1>
+    <div class="container">
+        <table id="statusTable">
+            <thead>
+                <tr>
+                    <th>Tài khoản</th>
+                    <th>Còn lại</th>
+                    <th>Trạng thái</th>
+                </tr>
+            </thead>
+            <tbody id="statusBody">
+                <tr>
+                    <td colspan="3" class="loading">Đang tải dữ liệu...</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+    <div class="update-time" id="updateTime"></div>
+
+    <script>
+        async function fetchStatus() {
+            try {
+                // Thêm cache-buster để luôn lấy dữ liệu mới nhất từ GitHub
+                const response = await fetch('status.json?t=' + new Date().getTime());
+                if (!response.ok) throw new Error('Không thể tải file status.json');
+                
+                const data = await response.json();
+                renderTable(data);
+                
+                // Hiển thị thời gian cập nhật từ file hoặc hiện tại
+                document.getElementById('updateTime').innerText = 'Cập nhật lần cuối: ' + new Date().toLocaleString('vi-VN');
+            } catch (error) {
+                console.error(error);
+                document.getElementById('statusBody').innerHTML = `<tr><td colspan="3" class="loading" style="color: red;">Lỗi: ${error.message}</td></tr>`;
+            }
+        }
+
+        function renderTable(data) {
+            const tbody = document.getElementById('statusBody');
+            tbody.innerHTML = '';
+
+            if (data.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="3" class="loading">Không có dữ liệu tài khoản.</td></tr>';
+                return;
+            }
+
+            data.forEach(acc => {
+                const tr = document.createElement('tr');
+                
+                let statusClass = 'status-success';
+                if (acc.status.includes('Lỗi') || acc.status.includes('hết hạn')) {
+                    statusClass = 'status-error';
+                } else if (acc.status.includes('Gia hạn')) {
+                    statusClass = 'status-warning';
+                }
+
+                tr.innerHTML = `
+                    <td><strong>${acc.username}</strong></td>
+                    <td>${acc.timeRemaining}</td>
+                    <td><span class="status-badge ${statusClass}">${acc.status}</span></td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
+
+        // Tự động tải dữ liệu khi mở trang
+        fetchStatus();
+        // Tự động làm mới mỗi 5 phút
+        setInterval(fetchStatus, 300000);
+    </script>
+</body>
+</html>
